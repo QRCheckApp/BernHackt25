@@ -6,7 +6,7 @@ import 'package:collection/collection.dart';
 
 import 'add_recipe_page.dart';
 import 'recipe_detail_page.dart';
-import 'gemini_recipe_generator.dart';
+import 'backend_recipe_generator.dart';
 import '../../app_state/providers.dart';
 import '../../models/recipe.dart';
 
@@ -22,12 +22,7 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
   final TextEditingController _quickGenCtrl = TextEditingController();
   bool _isGenerating = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Initialize Gemini AI
-    GeminiRecipeGenerator.initializeGemini();
-  }
+ 
 
   @override
   void dispose() {
@@ -99,11 +94,11 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
                       }
                       
                       try {
-                        // Use Gemini AI to generate recipe
-                        final Recipe? generatedRecipe = await GeminiRecipeGenerator.generateRecipeFromText(txt);
+                        // Use Backend API to generate recipe
+                        final Recipe? generatedRecipe = await BackendRecipeGenerator.generateRecipeFromText(txt);
                         
                         if (generatedRecipe != null) {
-                          // Gemini succeeded
+                          // Backend API succeeded
                           setState(() {
                             _quickGenCtrl.clear();
                           });
@@ -122,12 +117,14 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
                             memberId: currentUserId,
                             vote: 1, // Like
                           );
+                          
+                          print('Successfully generated recipe using Backend API');
                         } else {
-                          // Gemini failed - show error message
+                          // Backend API failed - show error message
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('KI-Service nicht verfügbar. Bitte versuche es später erneut.'),
+                                content: Text('Backend-Service nicht verfügbar. Bitte versuche es später erneut.'),
                                 backgroundColor: Colors.orange,
                               ),
                             );
@@ -148,7 +145,7 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
                       }
                     },
                     icon: _isGenerating ? const CircularProgressIndicator.adaptive(valueColor: AlwaysStoppedAnimation(Colors.white),) : const Icon(Icons.auto_awesome),
-                    tooltip: 'KI-Rezept generieren',
+                    tooltip: 'Backend-Rezept generieren',
                   ),
                 ],
           ),
