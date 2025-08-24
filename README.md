@@ -20,7 +20,7 @@ Weiterführende Ideen haben wir erstmal weggelassen, darunter z.B. das Scannen d
 
 ## Tech-Info
 
-Wir haben bereits einen voll funktionsfähigen Prototypen, der die Hauptfunktionen der App demonstriert — die *Essensentscheidungs-Phase* und die *Shopping-Phase*. Auch einige weitere Funktionen, wie die Startseite der App und das Bearbeiten des eigenen Profils sind schon nutzbar. Die übrigen Teile des Konzepts und Erweiterungen lassen sich später problemlos ergänzen.
+Wir haben bereits einen voll funktionsfähigen Prototypen, der die Hauptfunktionen der App demonstriert — die *Gerichteauswahl-Phase* und die *Einkaufs-Phase*. Auch einige weitere Funktionen, wie die Startseite der App und das Bearbeiten des eigenen Profils sind schon nutzbar. Die übrigen Teile des Konzepts und Erweiterungen lassen sich später problemlos ergänzen.
 
 ### Userflow
 Dieser Userflow konkretisiert [obige Idee](#die-idee) und ist die Basis für unseren Prototyp und eine weitere Implementierung.
@@ -28,7 +28,7 @@ Dieser Userflow konkretisiert [obige Idee](#die-idee) und ist die Basis für uns
 ##### Hauptfunktionalität
 ![Hauptfunktionalität Userflow](/documentation-assets/Main-Flow.png)
 
-##### Profile-Funktionalität
+##### Account-Funktionalität
 ![Account-Funktionalität Userflow](/documentation-assets/Account-Flow.png)
 
 ### Architektur
