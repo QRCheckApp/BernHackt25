@@ -5,7 +5,7 @@ BärnHäckt 2025 — „GspänliPlänli“ von „Team Tübingen“
 
 Gspänli steht für Kumpel, Plänli steht für Plan — Mit unserer App wird die Essensplanung mit Freunden im Urlaub ganz einfach.
 
-[Zum Source-Code auf GitHub](https://github.com/QRCheckApp/BernHackt25)
+[Zum Source-Code auf GitHub](https://github.com/QRCheckApp/BernHackt25) (Die Flutter App ist im Unterordner „flutter-app“)
 
 [Zum 1 min Video-Pitch auf YouTube](https://www.youtube.com/watch?v=AAYLAVFmRfs)
 
