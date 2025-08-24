@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 
 import 'add_recipe_page.dart';
 import 'recipe_detail_page.dart';
+import 'gemini_recipe_generator.dart';
 import '../../app_state/providers.dart';
 import '../../models/recipe.dart';
 
@@ -19,13 +20,13 @@ class Stage1View extends ConsumerStatefulWidget {
 
 class _Stage1ViewState extends ConsumerState<Stage1View> {
   final TextEditingController _quickGenCtrl = TextEditingController();
-  late List<Recipe> _localAdded; // local, mock-only additions
   bool _isGenerating = false;
 
   @override
   void initState() {
     super.initState();
-    _localAdded = [];
+    // Initialize Gemini AI
+    GeminiRecipeGenerator.initializeGemini();
   }
 
   @override
@@ -39,10 +40,7 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
     final tripId = widget.tripId;
     final currentUserId = ref.watch(currentUserIdProvider);
     final trip = ref.watch(tripDetailsProvider(tripId));
-    final allMeals = [
-      ..._localAdded,
-      ...ref.watch(tripAllMealsProvider(tripId)),
-    ];
+    final allMeals = ref.watch(tripAllMealsProvider(tripId));
 
     final swipes = ref.watch(tripSwipesProvider(tripId));
     final mySwipes = swipes.where((s) => s.memberId == currentUserId).toList();
@@ -60,7 +58,7 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
       children: [
         Scaffold(
           body: SafeArea(
-            child: _buildOverviewView(context, allMeals, swipes, mySwipes, totalLikes, totalDislikes, myLikes, myDislikes, unswipedRecipes.length),
+            child: _buildOverviewView(context, allMeals, swipes, mySwipes, totalLikes, totalDislikes, myLikes, myDislikes),
           ),
         ),
 
@@ -81,7 +79,7 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
               child: TextField(
                       controller: _quickGenCtrl,
                       decoration: const InputDecoration(
-                        hintText: 'z. B. „schnelle Pasta mit Tomaten"',
+                        hintText: 'z. B. „schnelle Pasta mit Tomatensauce" oder „vegetarisches Curry"',
                         border: InputBorder.none,
                       ),
                     ),
@@ -90,47 +88,67 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
                   ),
                   const SizedBox(width: 8),
                   IconButton.filled(
-                    onPressed: () {
+                    onPressed: () async {
                       setState(() => _isGenerating = true);
-                      Future.delayed(const Duration(seconds: 1), () {
-                        final txt = _quickGenCtrl.text.trim();
-                      if (txt.isEmpty) return;
-                      final rnd = Random().nextInt(99999);
-                      final Recipe mock = Recipe(
-                        id: 'gen_$rnd',
-                        title: _titleFromText(txt),
-                        servingsBase: 4,
-                        tags: const ['generiert', 'mock'],
-                        satisfies: const ['omnivore'],
-                        excludesAllergens: const [],
-                        applianceRequirements: const ['herd'],
-                        ingredients: [
-                          RecipeIngredient(itemName: 'Pasta', qty: 500, unit: 'g', category: 'pasta'),
-                          RecipeIngredient(itemName: 'Tomaten', qty: 400, unit: 'g', category: 'produce'),
-                          RecipeIngredient(itemName: 'Olivenöl', qty: 30, unit: 'ml', category: 'oil'),
-                        ],
-                        steps: const ['Wasser kochen', 'Pasta kochen', 'Sauce mischen'],
-                        estPrepMin: 10,
-                        estCookMin: 15,
-                      );
-                      setState(() {
-                        _localAdded.insert(0, mock);
-                        _quickGenCtrl.clear();
-                      });
+                      await Future.delayed(const Duration(seconds: 1));
                       
-                      // Automatically like the generated recipe
-                      final currentUserId = ref.read(currentUserIdProvider);
-                      ref.read(tripVotesControllerProvider.notifier).addVote(
-                        tripId: widget.tripId,
-                        recipeId: mock.id,
-                        memberId: currentUserId,
-                        vote: 1, // Like
-                      );
+                      final txt = _quickGenCtrl.text.trim();
+                      if (txt.isEmpty) {
                         setState(() => _isGenerating = false);
-                      });
+                        return;
+                      }
+                      
+                      try {
+                        // Use Gemini AI to generate recipe
+                        final Recipe? generatedRecipe = await GeminiRecipeGenerator.generateRecipeFromText(txt);
+                        
+                        if (generatedRecipe != null) {
+                          // Gemini succeeded
+                          setState(() {
+                            _quickGenCtrl.clear();
+                          });
+                          
+                          // Add recipe to dynamic recipes controller
+                          ref.read(dynamicRecipesControllerProvider.notifier).addRecipe(
+                            widget.tripId,
+                            generatedRecipe,
+                          );
+                          
+                          // Automatically like the generated recipe
+                          final currentUserId = ref.read(currentUserIdProvider);
+                          ref.read(tripVotesControllerProvider.notifier).addVote(
+                            tripId: widget.tripId,
+                            recipeId: generatedRecipe.id,
+                            memberId: currentUserId,
+                            vote: 1, // Like
+                          );
+                        } else {
+                          // Gemini failed - show error message
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('KI-Service nicht verfügbar. Bitte versuche es später erneut.'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        print('Error generating recipe: $e');
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Fehler beim Generieren des Rezepts: $e'),
+                              backgroundColor: Theme.of(context).colorScheme.error,
+                            ),
+                          );
+                        }
+                      } finally {
+                        setState(() => _isGenerating = false);
+                      }
                     },
                     icon: _isGenerating ? const CircularProgressIndicator.adaptive(valueColor: AlwaysStoppedAnimation(Colors.white),) : const Icon(Icons.auto_awesome),
-                    tooltip: 'Rezept generieren (Mock)',
+                    tooltip: 'KI-Rezept generieren',
                   ),
                 ],
           ),
@@ -139,7 +157,11 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
     );
   }
 
-  Widget _buildOverviewView(BuildContext context, List<Recipe> allMeals, List<dynamic> swipes, List<dynamic> mySwipes, int totalLikes, int totalDislikes, int myLikes, int myDislikes, int unswipedCount) {
+  Widget _buildOverviewView(BuildContext context, List<Recipe> allMeals, List<dynamic> swipes, List<dynamic> mySwipes, int totalLikes, int totalDislikes, int myLikes, int myDislikes) {
+    // Calculate unswiped count dynamically
+    final swipedRecipeIds = mySwipes.map((s) => s.recipeId).toSet();
+    final unswipedRecipes = allMeals.where((r) => !swipedRecipeIds.contains(r.id)).toList();
+    final unswipedCount = unswipedRecipes.length;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
       children: [
@@ -360,7 +382,12 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
                 estPrepMin: 5,
                 estCookMin: 10,
               );
-              setState(() => _localAdded.add(mock));
+              
+              // Add recipe to dynamic recipes controller
+              ref.read(dynamicRecipesControllerProvider.notifier).addRecipe(
+                widget.tripId,
+                mock,
+              );
               
               // Automatically like the recipe that was just added
               final currentUserId = ref.read(currentUserIdProvider);
@@ -393,6 +420,13 @@ class _Stage1ViewState extends ConsumerState<Stage1View> {
     if (trip == null) return null;
     
     try {
+      // Check if it's a dynamically added recipe (from Gemini AI or manual addition)
+      final dynamicRecipes = ref.read(dynamicRecipesControllerProvider)[widget.tripId] ?? [];
+      if (dynamicRecipes.any((recipe) => recipe.id == r.id)) {
+        return 'Du'; // User who added it
+      }
+      
+      // Check if it's from a user's meal list
       for (final member in trip.members) {
         final userMeals = ref.read(userMealsProvider(member.memberId));
         if (userMeals.any((meal) => meal.id == r.id)) {

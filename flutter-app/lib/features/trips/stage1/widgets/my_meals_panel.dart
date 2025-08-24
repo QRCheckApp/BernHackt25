@@ -19,16 +19,12 @@ class MyMealsPanel extends ConsumerStatefulWidget {
 }
 
 class _MyMealsPanelState extends ConsumerState<MyMealsPanel> {
-  late List<Recipe> _localUserMeals;
-
-  @override
-  void initState() {
-    super.initState();
-    _localUserMeals = List.from(widget.userMeals);
-  }
 
   @override
   Widget build(BuildContext context) {
+    final dynamicRecipes = ref.watch(dynamicRecipesControllerProvider)[widget.tripId] ?? [];
+    final allUserMeals = [...widget.userMeals, ...dynamicRecipes];
+    
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -58,7 +54,7 @@ class _MyMealsPanelState extends ConsumerState<MyMealsPanel> {
             ),
             const SizedBox(height: 12),
             
-            if (_localUserMeals.isEmpty)
+            if (allUserMeals.isEmpty)
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -92,7 +88,7 @@ class _MyMealsPanelState extends ConsumerState<MyMealsPanel> {
                 ),
               )
             else
-              ..._localUserMeals.map((meal) => _buildMealTile(meal)),
+              ...allUserMeals.map((meal) => _buildMealTile(meal)),
           ],
         ),
       ),
@@ -186,9 +182,11 @@ class _MyMealsPanelState extends ConsumerState<MyMealsPanel> {
     );
 
     if (result != null) {
-      setState(() {
-        _localUserMeals.add(result);
-      });
+      // Add recipe to dynamic recipes controller
+      ref.read(dynamicRecipesControllerProvider.notifier).addRecipe(
+        widget.tripId,
+        result,
+      );
       
       // Automatically like the newly added meal
       final currentUserId = ref.read(currentUserIdProvider);

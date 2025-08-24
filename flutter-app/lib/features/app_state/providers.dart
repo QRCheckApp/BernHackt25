@@ -243,7 +243,30 @@ final tripAllMealsProvider = Provider.family<List<Recipe>, String>((ref, tripId)
       }
     }
   }
-  return meals;
+  
+  // Add dynamically added recipes (from Gemini AI, manual additions, etc.)
+  // These should appear first in the list since they're newly added
+  final dynamicRecipes = ref.watch(dynamicRecipesControllerProvider)[tripId] ?? [];
+  final allMeals = <Recipe>[];
+  final allSeenIds = <String>{};
+  
+  // Add dynamic recipes first (newest first)
+  for (final recipe in dynamicRecipes) {
+    if (!allSeenIds.contains(recipe.id)) {
+      allSeenIds.add(recipe.id);
+      allMeals.add(recipe);
+    }
+  }
+  
+  // Then add existing meals
+  for (final meal in meals) {
+    if (!allSeenIds.contains(meal.id)) {
+      allSeenIds.add(meal.id);
+      allMeals.add(meal);
+    }
+  }
+  
+  return allMeals;
 });
 
 // Selectors for vote counts
@@ -282,6 +305,30 @@ class TripStageController extends StateNotifier<Map<String, TripStage>> {
 
 final tripStageControllerProvider = StateNotifierProvider<TripStageController, Map<String, TripStage>>((ref) {
   return TripStageController();
+});
+
+// Provider to manage dynamically added recipes (from Gemini AI, manual additions, etc.)
+class DynamicRecipesController extends StateNotifier<Map<String, List<Recipe>>> {
+  DynamicRecipesController() : super({});
+
+  void addRecipe(String tripId, Recipe recipe) {
+    final currentRecipes = state[tripId] ?? [];
+    state = {...state, tripId: [recipe, ...currentRecipes]};
+  }
+
+  void removeRecipe(String tripId, String recipeId) {
+    final currentRecipes = state[tripId] ?? [];
+    final updatedRecipes = currentRecipes.where((r) => r.id != recipeId).toList();
+    state = {...state, tripId: updatedRecipes};
+  }
+
+  List<Recipe> getRecipes(String tripId) {
+    return state[tripId] ?? [];
+  }
+}
+
+final dynamicRecipesControllerProvider = StateNotifierProvider<DynamicRecipesController, Map<String, List<Recipe>>>((ref) {
+  return DynamicRecipesController();
 });
 
 

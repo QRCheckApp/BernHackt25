@@ -1,16 +1,17 @@
 # huette
 
-A new Flutter project.
+Eine Flutter-App zur Verwaltung von Reisen, Rezepten und Einkaufslisten.
 
-## Getting Started
+## 🔑 API-Schlüssel Einrichtung
 
-This project is a starting point for a Flutter application.
+Dieses Projekt verwendet die Gemini AI API zur Rezeptgenerierung. So richtest du deinen API-Schlüssel ein:
 
-A few resources to get you started if this is your first Flutter project:
+1. **Hole dir deinen API-Schlüssel** von [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. **Kopiere die Vorlagendatei:**
+   ```bash
+   cp lib/core/config/api_keys_template.dart lib/core/config/api_keys.dart
+   ```
+3. **Füge deinen API-Schlüssel** in `lib/core/config/api_keys.dart` hinzu
+4. **Die API-Schlüssel-Datei wird automatisch von Git ignoriert**, um deine Schlüssel sicher zu halten
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Für detaillierte Einrichtungsanweisungen siehe [GEMINI_SETUP.md](GEMINI_SETUP.md).
